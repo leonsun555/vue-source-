@@ -21,6 +21,7 @@ import {
 export function initGlobalAPI (Vue: GlobalAPI) {
   // config
   const configDef = {}
+  //將全局屬性config存入configDef.get中
   configDef.get = () => config
   if (process.env.NODE_ENV !== 'production') {
     configDef.set = () => {
@@ -29,6 +30,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
       )
     }
   }
+  //為Vue新增一個config屬性,內容為configDef
   Object.defineProperty(Vue, 'config', configDef)
 
   // exposed util methods.

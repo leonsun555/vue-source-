@@ -144,8 +144,11 @@ export function mountComponent (
   hydrating?: boolean
 ): Component {
   vm.$el = el
+  //如果沒有render函數,要做處理,因為vue最終只認render函數
   if (!vm.$options.render) {
+    //為render函數創造空的VNode
     vm.$options.render = createEmptyVNode
+    //如果是在開發模式運行,則會報錯提醒
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
       if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
@@ -164,10 +167,12 @@ export function mountComponent (
       }
     }
   }
+  //Hook生命週期 => beforeMount
   callHook(vm, 'beforeMount')
 
   let updateComponent
   /* istanbul ignore if */
+  //在開發者模式中,可以開啟performance查看vue compile效能
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
       const name = vm._name
@@ -186,7 +191,9 @@ export function mountComponent (
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    //只要數據有異動,就會call updateComponent方法
     updateComponent = () => {
+      //定用vm._update並傳入render函數
       vm._update(vm._render(), hydrating)
     }
   }
@@ -194,9 +201,11 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  //Watcher觀察者物件,是Vue響應示框架很重要的一個核心功能,位置在./observer/watcher.js
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
+        //生命週期 => beforeUpdate
         callHook(vm, 'beforeUpdate')
       }
     }
@@ -207,6 +216,7 @@ export function mountComponent (
   // mounted is called for render-created child components in its inserted hook
   if (vm.$vnode == null) {
     vm._isMounted = true
+    //生命週期 => mounted
     callHook(vm, 'mounted')
   }
   return vm

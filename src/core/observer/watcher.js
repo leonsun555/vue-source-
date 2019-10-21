@@ -79,9 +79,12 @@ export default class Watcher {
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
+      //將expOrFn轉成Function
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
+        //this.getter為空函數
         this.getter = noop
+        //如果為開發者模式,則報錯提醒
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +

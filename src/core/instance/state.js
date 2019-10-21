@@ -36,6 +36,7 @@ const sharedPropertyDefinition = {
 }
 
 export function proxy (target: Object, sourceKey: string, key: string) {
+  //定義vm._data可以提供外界存取和設定
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
   }
@@ -111,6 +112,7 @@ function initProps (vm: Component, propsOptions: Object) {
 
 function initData (vm: Component) {
   let data = vm.$options.data
+  /* 如果data 為函數,則呼叫getData() */
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
@@ -127,6 +129,7 @@ function initData (vm: Component) {
   const props = vm.$options.props
   const methods = vm.$options.methods
   let i = keys.length
+  //檢查每一個data屬性名稱是否與props或methods屬性衝突
   while (i--) {
     const key = keys[i]
     if (process.env.NODE_ENV !== 'production') {
@@ -144,6 +147,7 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      //檢查過關,則將屬性代理至Vue Object
       proxy(vm, `_data`, key)
     }
   }
@@ -155,6 +159,7 @@ export function getData (data: Function, vm: Component): any {
   // #7573 disable dep collection when invoking data getters
   pushTarget()
   try {
+    //運許其他方法在Vue object中調用data
     return data.call(vm, vm)
   } catch (e) {
     handleError(e, vm, `data()`)
