@@ -34,6 +34,7 @@ if (process.env.NODE_ENV !== 'production') {
     )
   }
 
+  //Proxy為ES6新增的功能,詳見官網API敘述
   const hasProxy =
     typeof Proxy !== 'undefined' && isNative(Proxy)
 
