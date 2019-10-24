@@ -144,7 +144,7 @@ export function mountComponent (
   hydrating?: boolean
 ): Component {
   vm.$el = el
-  //如果沒有render函數,要做處理,因為vue最終只認render函數
+  //如果沒有render函數,要做處理,因為vue最終只認render函數,也就是VNode
   if (!vm.$options.render) {
     //為render函數創造空的VNode
     vm.$options.render = createEmptyVNode
@@ -181,11 +181,13 @@ export function mountComponent (
       const endTag = `vue-perf-end:${id}`
 
       mark(startTag)
+      //生成render函數VNode
       const vnode = vm._render()
       mark(endTag)
       measure(`vue ${name} render`, startTag, endTag)
 
       mark(startTag)
+      //更新vnode
       vm._update(vnode, hydrating)
       mark(endTag)
       measure(`vue ${name} patch`, startTag, endTag)
@@ -193,7 +195,7 @@ export function mountComponent (
   } else {
     //只要數據有異動,就會call updateComponent方法
     updateComponent = () => {
-      //定用vm._update並傳入render函數
+      //定用vm._update並傳入render函數(代表欲更新及渲染的VNode))
       vm._update(vm._render(), hydrating)
     }
   }
@@ -202,6 +204,7 @@ export function mountComponent (
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
   //Watcher觀察者物件,是Vue響應示框架很重要的一個核心功能,位置在./observer/watcher.js
+  //透過callback updateComponent更新目標DOM對象
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -214,6 +217,7 @@ export function mountComponent (
 
   // manually mounted instance, call mounted on self
   // mounted is called for render-created child components in its inserted hook
+  //此處的$vnode代表當前vm的父vnode,如果=null,代表已是根節點,也代表所有子節點接已掛載
   if (vm.$vnode == null) {
     vm._isMounted = true
     //生命週期 => mounted

@@ -19,6 +19,7 @@ import { isUpdatingChildComponent } from './lifecycle'
 export function initRender (vm: Component) {
   vm._vnode = null // the root of the child tree
   vm._staticTrees = null // v-once cached trees
+  //此處vm.$options為merge過後的DOM對象
   const options = vm.$options
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
   const renderContext = parentVnode && parentVnode.context
@@ -32,6 +33,15 @@ export function initRender (vm: Component) {
   // normalization is always applied for the public version, used in
   // user-written render functions.
   //創建VNode元素
+  /* 此處options a,b,c,d分別為 => 
+  
+  parentVal: ?Object,
+  childVal: ?Object,
+  vm?: Component,
+  key: string
+  
+  定義再options.js中的strats方法
+  */
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 
   // $attrs & $listeners are exposed for easier HOC creation.
@@ -69,6 +79,7 @@ export function renderMixin (Vue: Class<Component>) {
 
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
+    //將merge後的DOM object存至render及_parentVnode
     const { render, _parentVnode } = vm.$options
 
     if (_parentVnode) {
@@ -89,6 +100,7 @@ export function renderMixin (Vue: Class<Component>) {
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
       currentRenderingInstance = vm
+      //將Merge後的DOM Object帶入createElement轉換成VNode,再帶入Proxy讓Vue可以存取這些VNode
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)

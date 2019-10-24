@@ -241,6 +241,7 @@ strats.watch = function (
 strats.props =
 strats.methods =
 strats.inject =
+//merge DOM Object之邏輯
 strats.computed = function (
   parentVal: ?Object,
   childVal: ?Object,

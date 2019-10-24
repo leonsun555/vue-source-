@@ -18,10 +18,15 @@ function Vue (options) {
 }
 
 //一系列的方法混入
+//初始化Vue object定義
 initMixin(Vue)
+//state實作,相關屬性賦予set,get方法,並加入watch監聽方法
 stateMixin(Vue)
+//events方法實作
 eventsMixin(Vue)
+//生命週期實作
 lifecycleMixin(Vue)
+//render函數實作
 renderMixin(Vue)
 
 export default Vue

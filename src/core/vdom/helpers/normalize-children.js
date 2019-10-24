@@ -18,6 +18,7 @@ import { isFalse, isTrue, isDef, isUndef, isPrimitive } from 'shared/util'
 export function simpleNormalizeChildren (children: any) {
   for (let i = 0; i < children.length; i++) {
     if (Array.isArray(children[i])) {
+      //將children中的每個元素的陣列全部展開並連接,最後返回一維陣列
       return Array.prototype.concat.apply([], children)
     }
   }
@@ -29,10 +30,10 @@ export function simpleNormalizeChildren (children: any) {
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
 export function normalizeChildren (children: any): ?Array<VNode> {
-  return isPrimitive(children)
-    ? [createTextVNode(children)]
-    : Array.isArray(children)
-      ? normalizeArrayChildren(children)
+  return isPrimitive(children)  //判斷children是否為基礎類別
+    ? [createTextVNode(children)]   //創建一個純文本VNode
+    : Array.isArray(children)     //再判斷children是否為陣列
+      ? normalizeArrayChildren(children)    //做陣列處理
       : undefined
 }
 
@@ -40,17 +41,21 @@ function isTextNode (node): boolean {
   return isDef(node) && isDef(node.text) && isFalse(node.isComment)
 }
 
+//最終處理完返回的陣列,每一個元素都是VNode,以構建VNode tree
 function normalizeArrayChildren (children: any, nestedIndex?: string): Array<VNode> {
   const res = []
   let i, c, lastIndex, last
   for (i = 0; i < children.length; i++) {
     c = children[i]
-    if (isUndef(c) || typeof c === 'boolean') continue
+    //如果元素為boolean值,則挑過處理
+    if (isUndef(c) || typeof c === 'boolean') continue    
     lastIndex = res.length - 1
     last = res[lastIndex]
     //  nested
+    //如果元素中又包含陣列
     if (Array.isArray(c)) {
       if (c.length > 0) {
+        //遞迴處理元素中包含的陣列
         c = normalizeArrayChildren(c, `${nestedIndex || ''}_${i}`)
         // merge adjacent text nodes
         if (isTextNode(c[0]) && isTextNode(last)) {
@@ -59,7 +64,9 @@ function normalizeArrayChildren (children: any, nestedIndex?: string): Array<VNo
         }
         res.push.apply(res, c)
       }
-    } else if (isPrimitive(c)) {
+    }
+    //如果元素是基礎類別
+    else if (isPrimitive(c)) {
       if (isTextNode(last)) {
         // merge adjacent text nodes
         // this is necessary for SSR hydration because text nodes are
