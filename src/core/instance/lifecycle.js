@@ -193,9 +193,9 @@ export function mountComponent (
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
-    //只要數據有異動,就會call updateComponent方法
+    //定義updateComponent函式
     updateComponent = () => {
-      //定用vm._update並傳入render函數(代表欲更新及渲染的VNode))
+      //用vm._update並傳入render函數返回的結果(代表欲更新及渲染的VNode))
       vm._update(vm._render(), hydrating)
     }
   }

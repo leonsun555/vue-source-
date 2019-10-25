@@ -79,7 +79,7 @@ export function renderMixin (Vue: Class<Component>) {
 
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
-    //將merge後的DOM object存至render及_parentVnode
+    //將merge後的DOM object中的render及_parentVnode屬性分別存至render及_parentVnode
     const { render, _parentVnode } = vm.$options
 
     if (_parentVnode) {
@@ -100,7 +100,8 @@ export function renderMixin (Vue: Class<Component>) {
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
       currentRenderingInstance = vm
-      //將Merge後的DOM Object帶入createElement轉換成VNode,再帶入Proxy讓Vue可以存取這些VNode
+      //讓render函式呼叫createElement方法並傳入App作為參數並return VNode,再將轉換結果代理至Vue Object,
+      //並讓原本的render繼承
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)

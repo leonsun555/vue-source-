@@ -241,7 +241,6 @@ strats.watch = function (
 strats.props =
 strats.methods =
 strats.inject =
-//merge DOM Object之邏輯
 strats.computed = function (
   parentVal: ?Object,
   childVal: ?Object,
@@ -253,7 +252,9 @@ strats.computed = function (
   }
   if (!parentVal) return childVal
   const ret = Object.create(null)
+  //將父對項傳入至當前ret
   extend(ret, parentVal)
+  //判斷是否有子對象,如果有則也傳入至當前ret
   if (childVal) extend(ret, childVal)
   return ret
 }
@@ -429,6 +430,7 @@ export function mergeOptions (
     }
   }
   function mergeField (key) {
+    //根據傳入的key調用不同的merge方法
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
   }
