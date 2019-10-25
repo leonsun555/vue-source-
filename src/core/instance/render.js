@@ -102,6 +102,7 @@ export function renderMixin (Vue: Class<Component>) {
       currentRenderingInstance = vm
       //讓render函式呼叫createElement方法並傳入App作為參數並return VNode,再將轉換結果代理至Vue Object,
       //並讓原本的render繼承
+      //render函式繼承vm.$createElement對象並代理至Vue Object
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)
