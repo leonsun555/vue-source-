@@ -30,16 +30,18 @@ export function initMixin (Vue: Class<Component>) {
     // a flag to avoid this being observed
     vm._isVue = true
     // merge options
-    //options合併
+    //判斷是否為組件
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
+      //組件結構初始化
       initInternalComponent(vm, options)
     } else {
+      //首次(new Vue時)options合併
       vm.$options = mergeOptions(
-        resolveConstructorOptions(vm.constructor),
-        options || {},
+        resolveConstructorOptions(vm.constructor),  //vue construct屬性
+        options || {},    //傳入之options
         vm
       )
     }
@@ -55,11 +57,14 @@ export function initMixin (Vue: Class<Component>) {
     initLifecycle(vm)
     initEvents(vm)
     initRender(vm)
+    //生命週期 => beforeCreate
     callHook(vm, 'beforeCreate')
     initInjections(vm) // resolve injections before data/props
     //定義Vue Object中各種常用屬性方法,ex: props,methods,data,...
     initState(vm)
     initProvide(vm) // resolve provide after data/props
+    //生命週期 => created
+    //因為已經執行過initState,所以是可以透過vm訪問傳入數據的
     callHook(vm, 'created')
 
     /* istanbul ignore if */
@@ -76,12 +81,16 @@ export function initMixin (Vue: Class<Component>) {
 }
 
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
+  //繼承vm options結構
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
+  //父vnode
   const parentVnode = options._parentVnode
+  //當前欲激活之Vm Component
   opts.parent = options.parent
   opts._parentVnode = parentVnode
 
+  //將parentVnode屬性複製給vm.$options
   const vnodeComponentOptions = parentVnode.componentOptions
   opts.propsData = vnodeComponentOptions.propsData
   opts._parentListeners = vnodeComponentOptions.listeners

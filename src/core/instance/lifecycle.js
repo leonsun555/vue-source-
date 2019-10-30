@@ -17,6 +17,7 @@ import {
   validateProp,
   invokeWithErrorHandling
 } from '../util/index'
+import { debuglog } from 'util'
 
 export let activeInstance: any = null
 export let isUpdatingChildComponent: boolean = false
@@ -38,6 +39,8 @@ export function initLifecycle (vm: Component) {
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }
+    //將當前Vm Component push至父節點的$children屬性
+    //意即為當前建立的Component建立父子關係
     parent.$children.push(vm)
   }
 
@@ -60,12 +63,17 @@ export function lifecycleMixin (Vue: Class<Component>) {
     const vm: Component = this
     const prevEl = vm.$el
     const prevVnode = vm._vnode
+    //將欲激活的Component存入activeInstance,並將先前vm Component存入prevActiveInstance
     const restoreActiveInstance = setActiveInstance(vm)
+    
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
     if (!prevVnode) {
       // initial render
+      //vm.__patch__實際定義在platform/web/runtime/index.js,其內部指向core/vdom/patch.js
+      //vm.$el為原先傳入之真實DOM,為首次進行patch,如果之後有引入其他Component
+      //vm.$el就會為undefined傳入,vnode則為render函數轉換過的VNode物件
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
@@ -99,6 +107,8 @@ export function lifecycleMixin (Vue: Class<Component>) {
     if (vm._isBeingDestroyed) {
       return
     }
+    //生命週期 => beforeDestroy鉤子函數,
+    //執行順序為先父後子
     callHook(vm, 'beforeDestroy')
     vm._isBeingDestroyed = true
     // remove self from parent
@@ -122,8 +132,11 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // call the last hook...
     vm._isDestroyed = true
     // invoke destroy hooks on current rendered tree
+    //同組件渲染即創建過程,只是第2個參數vnode的部分傳null,進行遞迴銷毀子組件
     vm.__patch__(vm._vnode, null)
     // fire destroyed hook
+    //生命週期 => destroyed,
+    //執行順序為先子後父
     callHook(vm, 'destroyed')
     // turn off all instance listeners.
     vm.$off()
@@ -168,6 +181,7 @@ export function mountComponent (
     }
   }
   //Hook生命週期 => beforeMount
+  //Component執行beforeMount鉤子順序為先父後子,因為調用mountComponent屬性是一層一層往下的
   callHook(vm, 'beforeMount')
 
   let updateComponent
@@ -195,7 +209,11 @@ export function mountComponent (
   } else {
     //定義updateComponent函式
     updateComponent = () => {
-      //用vm._update並傳入render函數返回的結果(代表欲更新及渲染的VNode))
+      //呼叫vm._update並傳入_render函數返回的結果
+      //此行代表將經由_render函式生成的vnode傳入_update進行patch成為真實DOM,
+      //其順序為先子後父,將組件的DOM Element render成Vnode後再由_update的patch方法轉回為真實DOM,
+      //因為內部皆使用全局變數,故不需要任何傳入參數
+      //PS:vm._update定義在lifecycleMixin中
       vm._update(vm._render(), hydrating)
     }
   }
@@ -204,11 +222,11 @@ export function mountComponent (
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
   //Watcher觀察者物件,是Vue響應示框架很重要的一個核心功能,位置在./observer/watcher.js
-  //透過callback updateComponent更新目標DOM對象
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
-        //生命週期 => beforeUpdate
+        //生命週期 => beforeUpdate,
+        //在Watcher創建之初即執行
         callHook(vm, 'beforeUpdate')
       }
     }
@@ -352,8 +370,10 @@ export function callHook (vm: Component, hook: string) {
   pushTarget()
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
+  //如果傳入鉤子函數不為undefined
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
+      //執行當前vm鉤子函數邏輯
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }

@@ -25,6 +25,16 @@ const ALWAYS_NORMALIZE = 2
 
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
+//根據傳入render函數的參數定義
+//ex1: render: h => h(App)   此情況傳入tag = App.vue的Component Object
+/*ex2: render: function(createElement){         此情況tag = 'div', data = {attr:{id: 'app'}}, children = this.message this為vue object
+    return createElement('div',{
+      attr: {
+        id: 'app'
+      }
+    }, this.message)    
+}
+*/
 export function createElement (
   context: Component,
   tag: any,
@@ -88,7 +98,7 @@ export function _createElement (
     data.scopedSlots = { default: children[0] }
     children.length = 0
   }
-  //key
+  //將子節點全部展成一維陣列
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
@@ -122,8 +132,10 @@ export function _createElement (
         undefined, undefined, context
       )
     }
+  //如果傳入的tag是component(.vue組件化對象)
   } else {
     // direct component options / constructor
+    //創建Component Vnode,其內部包含的children寫在componentOptions中
     vnode = createComponent(tag, data, context, children)
   }
   if (Array.isArray(vnode)) {

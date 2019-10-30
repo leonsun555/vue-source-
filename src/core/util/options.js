@@ -143,25 +143,28 @@ strats.data = function (
 /**
  * Hooks and props are merged as arrays.
  */
+//返回函式陣列,裡面包含有不同生命週期的函式
 function mergeHook (
   parentVal: ?Array<Function>,
   childVal: ?Function | ?Array<Function>
 ): ?Array<Function> {
-  const res = childVal
-    ? parentVal
-      ? parentVal.concat(childVal)
-      : Array.isArray(childVal)
-        ? childVal
-        : [childVal]
-    : parentVal
+  const res = childVal    //檢查是否有childVal
+    ? parentVal           
+      ? parentVal.concat(childVal)  //parent及child有相同的key,陣列內順序為先父後子
+      : Array.isArray(childVal)     //只有child的情況下,判斷其是否為Array
+        ? childVal          //直接返回
+        : [childVal]        //轉為Array
+    : parentVal     //直接返回parentVal,不需合併
   return res
     ? dedupeHooks(res)
     : res
 }
 
+//此段邏輯似乎有點多餘?
 function dedupeHooks (hooks) {
   const res = []
   for (let i = 0; i < hooks.length; i++) {
+    
     if (res.indexOf(hooks[i]) === -1) {
       res.push(hooks[i])
     }
@@ -169,6 +172,7 @@ function dedupeHooks (hooks) {
   return res
 }
 
+//定義不同生命週期的merge方法,其全部指向同一個mergeHook函式
 LIFECYCLE_HOOKS.forEach(hook => {
   strats[hook] = mergeHook
 })
@@ -388,8 +392,8 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
  * Core utility used in both instantiation and inheritance.
  */
 export function mergeOptions (
-  parent: Object,
-  child: Object,
+  parent: Object, 
+  child: Object,  
   vm?: Component
 ): Object {
   if (process.env.NODE_ENV !== 'production') {
@@ -400,6 +404,7 @@ export function mergeOptions (
     child = child.options
   }
 
+  //child options展開
   normalizeProps(child, vm)
   normalizeInject(child, vm)
   normalizeDirectives(child)
@@ -408,6 +413,8 @@ export function mergeOptions (
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  //把傳入options之extends及mixins屬性遞迴merge至parent(Vue or Component),
+  //為了避免child為合併後之結果,先判斷是否有_base屬性,如果有則代表已合併過,無須再做遞迴
   if (!child._base) {
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
@@ -425,12 +432,13 @@ export function mergeOptions (
     mergeField(key)
   }
   for (key in child) {
+    //檢查parent是否已經有merge該key
     if (!hasOwn(parent, key)) {
       mergeField(key)
     }
   }
   function mergeField (key) {
-    //根據傳入的key調用不同的merge方法
+    //根據傳入的options[key]調用不同的merge方法
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
   }

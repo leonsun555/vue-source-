@@ -29,10 +29,11 @@ export function initRender (vm: Component) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  //自動編譯走的vm._c函數
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
-  //創建VNode元素
+  //手寫render函數,創建VNode元素
   /* 此處options a,b,c,d分別為 => 
   
   parentVal: ?Object,
@@ -100,9 +101,9 @@ export function renderMixin (Vue: Class<Component>) {
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
       currentRenderingInstance = vm
-      //讓render函式呼叫createElement方法並傳入App作為參數並return VNode,再將轉換結果代理至Vue Object,
-      //並讓原本的render繼承
-      //render函式繼承vm.$createElement對象並代理至Vue Object
+      //讓render函式呼叫createElement方法並傳入App作為參數並return VNode,如果是在開發者模式,此處vm.renderProxy
+      //會檢查瀏覽器是否支援Proxy方法,並將相關驗證方法(handler)代理至上下文vm,否則一般就是vm
+      
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)

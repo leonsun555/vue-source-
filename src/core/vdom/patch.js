@@ -73,6 +73,7 @@ export function createPatchFunction (backend) {
 
   const { modules, nodeOps } = backend
 
+  //鉤子初始化
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
@@ -140,14 +141,22 @@ export function createPatchFunction (backend) {
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
 
+    //是否為根節點
     vnode.isRootInsert = !nested // for transition enter check
+
+    //根據傳入vnode屬性的componentOptions中是否有Hooks鉤子函數判斷是否為一個Component,如果是則將Vnode轉為Vue Component類型,
+    //繼承Vue construct屬性及merge該Component傳入之options
+    //並插入其parent DOM element,重新調用$mount方法繼續render該組件(.vue)下的Element
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
 
+
+    //以下步驟為實際將每個vnode轉換為真實DOM
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
+    //如果有tag屬性(<div>,<p>,<h1>,...)
     if (isDef(tag)) {
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
@@ -163,9 +172,10 @@ export function createPatchFunction (backend) {
         }
       }
 
+      //調用原生DOM API產生DOM Element
       vnode.elm = vnode.ns
-        ? nodeOps.createElementNS(vnode.ns, tag)
-        : nodeOps.createElement(tag, vnode)
+        ? nodeOps.createElementNS(vnode.ns, tag)      //相當於Document.createElementNS()
+        : nodeOps.createElement(tag, vnode)           //相當於Document.createElement()
       setScope(vnode)
 
       /* istanbul ignore if */
@@ -188,38 +198,49 @@ export function createPatchFunction (backend) {
           insert(parentElm, vnode.elm, refElm)
         }
       } else {
+        //將傳入vnode的children轉成DOM Element並append至當前DOM Element(vnode.elm)
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+        //插入轉換後的DOM Element插入至其父節點DOM
         insert(parentElm, vnode.elm, refElm)
       }
 
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
         creatingElmInVPre--
       }
+    //如果傳入vnode為註釋
     } else if (isTrue(vnode.isComment)) {
-      vnode.elm = nodeOps.createComment(vnode.text)
+      vnode.elm = nodeOps.createComment(vnode.text)   //呼叫Document.createComment()
       insert(parentElm, vnode.elm, refElm)
+    //其他代表傳入的vnode為純文本
     } else {
-      vnode.elm = nodeOps.createTextNode(vnode.text)
+      vnode.elm = nodeOps.createTextNode(vnode.text)   //呼叫Document.createTextNode()
       insert(parentElm, vnode.elm, refElm)
     }
-  }
+  } 
 
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      //判斷vnode是否有鉤子屬性,意即是否為component的vnode,
+      //因為如果是傳入對象為compoonent在render時會建立鉤子屬性(installComponentHooks(vnode.data))
       if (isDef(i = i.hook) && isDef(i = i.init)) {
+        //將Component傳入並重新初始化該組件,意即將此Component底下的的元素render成VNode進行patch
+        //等同於遞迴處理所有的Component
         i(vnode, false /* hydrating */)
       }
       // after calling the init hook, if the vnode is a child component
       // it should've created a child instance and mounted it. the child
       // component also has set the placeholder vnode's elm.
       // in that case we can just return the element and be done.
+      //已完成該Component渲染的整體流程
       if (isDef(vnode.componentInstance)) {
+        //將此Component中的vnode push進insertedVnodeQueue
         initComponent(vnode, insertedVnodeQueue)
+        //將其插入至父DOM Element
         insert(parentElm, vnode.elm, refElm)
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
@@ -308,6 +329,7 @@ export function createPatchFunction (backend) {
     i = vnode.data.hook // Reuse variable
     if (isDef(i)) {
       if (isDef(i.create)) i.create(emptyNode, vnode)
+      //將傳入vnode push至已插入等待處理的VnodeQueue
       if (isDef(i.insert)) insertedVnodeQueue.push(vnode)
     }
   }
@@ -580,6 +602,8 @@ export function createPatchFunction (backend) {
       vnode.parent.data.pendingInsert = queue
     } else {
       for (let i = 0; i < queue.length; ++i) {
+        //調用傳入queue的data.hook中insert方法,並傳入自己(vnode)
+        //其實queue隊列中為等待執行Mounted鉤子函數的vnode,插入順序為先子後父,執行順序也是先子後父
         queue[i].data.hook.insert(queue[i])
       }
     }
@@ -697,25 +721,33 @@ export function createPatchFunction (backend) {
     }
   }
 
+  //真正patch函數實現邏輯
+  //首次patch傳入的oldVnode為原始DOM Object,
+  //之後如果還掉用到patch則代表有組件需創建,oldVnode則會是undefined
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    //如果vnode為null,則進行destroy
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
     }
-
     let isInitialPatch = false
     const insertedVnodeQueue = []
 
+    //判斷oldVnode是否存在,存在代表父節點為真實DOM,表示剛開始轉換過程,
+    //不存在代表父節點是VNode
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
       isInitialPatch = true
+      //建立當前組件的vnode
       createElm(vnode, insertedVnodeQueue)
     } else {
+      //檢查原始傳入DOM Element是否為真實Element
       const isRealElement = isDef(oldVnode.nodeType)
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+        //判斷為真實DOM
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
@@ -740,14 +772,18 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
+          //將真實DOM轉成VNode,將真實DOM存進odlVnode.elm屬性中
           oldVnode = emptyNodeAt(oldVnode)
         }
 
         // replacing existing element
+        // 這裡暫存原先DOM Object至oldElm常數
         const oldElm = oldVnode.elm
+        // 將其父節點DOM存至parentElm
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
+        // 將頂端vnode掛載至真實DOM
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -788,6 +824,8 @@ export function createPatchFunction (backend) {
           }
         }
 
+        //因為patch過程會將render產生的vnode轉成真實DOM,
+        //舊的DOM並不會自動移除,在這裡需要增加移除邏輯
         // destroy old node
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)
@@ -797,7 +835,9 @@ export function createPatchFunction (backend) {
       }
     }
 
+    //執行鉤子函數中的insert方法,並傳入佇列Vnode(insertedVnodeQueue)
     invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
+    //回傳patch後的結果
     return vnode.elm
   }
 }

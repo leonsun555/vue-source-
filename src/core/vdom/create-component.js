@@ -33,6 +33,7 @@ import {
 } from 'weex/runtime/recycle-list/render-component-template'
 
 // inline hooks to be invoked on component VNodes during patch
+// Component Hook定義
 const componentVNodeHooks = {
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
@@ -44,10 +45,13 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
+      //將當前vnode及父vnode(activeInstance)傳入createComponentInstanceForVnode(),
+      //並回傳已定義父子關係的Component(Sub Component)
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
       )
+        
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
@@ -67,7 +71,10 @@ const componentVNodeHooks = {
   insert (vnode: MountedComponentVNode) {
     const { context, componentInstance } = vnode
     if (!componentInstance._isMounted) {
+      //執行至此代表有組件(Component)完成整已渲染過程
       componentInstance._isMounted = true
+      //生命週期 => mounted
+      //此為Component的mounted鉤子函數
       callHook(componentInstance, 'mounted')
     }
     if (vnode.data.keepAlive) {
@@ -109,10 +116,14 @@ export function createComponent (
     return
   }
 
+  //此處context為vm,也就是baseCtor指向vm.$options._base
+  //為initGlobalApi初始化時建立的靜態屬性
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  //如果傳入tag為Object
   if (isObject(Ctor)) {
+    //呼叫vm.extend方法,目的是將component繼承Vue Object,其中並未實作方法,只是返回construct
     Ctor = baseCtor.extend(Ctor)
   }
 
@@ -183,10 +194,12 @@ export function createComponent (
   }
 
   // install component management hooks onto the placeholder node
+  // 定義Componet專屬鉤子函數(init,prepatch,insert,destroy)
   installComponentHooks(data)
 
   // return a placeholder vnode
   const name = Ctor.options.name || tag
+  //Component的children放在componentOptions內,請參照VNode定義
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
     data, undefined, undefined, undefined, context,
@@ -211,7 +224,9 @@ export function createComponentInstanceForVnode (
 ): Component {
   const options: InternalComponentOptions = {
     _isComponent: true,
+    //父vnode,代表之前遍歷下來經過的vnode
     _parentVnode: vnode,
+    //當前Vm Component(activeInstance)
     parent
   }
   // check inline-template render functions
@@ -220,16 +235,24 @@ export function createComponentInstanceForVnode (
     options.render = inlineTemplate.render
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
+  //實作vnode.componentOtions.Ctor(定義在GlobalApi.extend.js)屬性並傳入options
   return new vnode.componentOptions.Ctor(options)
 }
 
 function installComponentHooks (data: VNodeData) {
+  //暫存傳入data的現有hook,否則為空Object
   const hooks = data.hook || (data.hook = {})
+  //此處hooksToMerge為所有componentVNodeHooks定義之鉤子函數名稱
   for (let i = 0; i < hooksToMerge.length; i++) {
+    //key暫存每個hooksToMerge元素
     const key = hooksToMerge[i]
+    //如果傳入data.hook有和原生定義的鉤子函數相同名稱,暫存該函數至existing
     const existing = hooks[key]
+    //暫存遍歷到的鉤子方法至toMerge
     const toMerge = componentVNodeHooks[key]
+    //如果傳入鉤子函數名稱相同但型態不同,或沒有相同鉤子函數名稱
     if (existing !== toMerge && !(existing && existing._merged)) {
+      //有existing就進行merge,沒有就將原生鉤子函數複製給hooks[keys]
       hooks[key] = existing ? mergeHook(toMerge, existing) : toMerge
     }
   }

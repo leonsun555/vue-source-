@@ -132,6 +132,7 @@ function callUpdatedHooks (queue) {
   while (i--) {
     const watcher = queue[i]
     const vm = watcher.vm
+    //如果此watcher為渲染watched即該vm已完成第一次的mount過程及該vm非destroyed狀態
     if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
       callHook(vm, 'updated')
     }
