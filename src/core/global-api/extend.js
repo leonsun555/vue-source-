@@ -35,7 +35,7 @@ export function initExtend (Vue: GlobalAPI) {
 
     //初始化VueComponent為Sub的構造函數
     const Sub = function VueComponent (options) {
-      //因為下面繼承了Vue Object,故可以調用vue._init()方法做初始化
+      //進行子組件初始化
       this._init(options)
     }
     //原型鍊繼承,意即在Vue(Super) Object上建立下線Sub(VueComponent)繼承Vue Object,
@@ -44,7 +44,8 @@ export function initExtend (Vue: GlobalAPI) {
     //constructor構建
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
-    //Vue.options與自身定義options合併
+    //Vue.options與自身定義options合併,存入自身options,
+    //因此局部註冊的組件作用範圍僅限該組件
     Sub.options = mergeOptions(
       Super.options,
       extendOptions

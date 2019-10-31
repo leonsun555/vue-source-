@@ -33,16 +33,7 @@ export function initRender (vm: Component) {
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
-  //手寫render函數,創建VNode元素
-  /* 此處options a,b,c,d分別為 => 
-  
-  parentVal: ?Object,
-  childVal: ?Object,
-  vm?: Component,
-  key: string
-  
-  定義再options.js中的strats方法
-  */
+  //手寫render函數(通常是第一層Component組件),創建VNode元素
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 
   // $attrs & $listeners are exposed for easier HOC creation.

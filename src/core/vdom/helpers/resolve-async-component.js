@@ -27,6 +27,7 @@ function ensureCtor (comp: any, base) {
     : comp
 }
 
+//創建一個空的vnode,並傳入異步工廠函數及meta
 export function createAsyncPlaceholder (
   factory: Function,
   data: ?VNodeData,
@@ -47,11 +48,13 @@ export function resolveAsyncComponent (
   if (isTrue(factory.error) && isDef(factory.errorComp)) {
     return factory.errorComp
   }
-
+  
+  //如果
   if (isDef(factory.resolved)) {
     return factory.resolved
   }
 
+  //owner就是當前傳入vm object
   const owner = currentRenderingInstance
   if (owner && isDef(factory.owners) && factory.owners.indexOf(owner) === -1) {
     // already pending
@@ -63,6 +66,7 @@ export function resolveAsyncComponent (
   }
 
   if (owner && !isDef(factory.owners)) {
+    //把自身存入factory.owners屬性
     const owners = factory.owners = [owner]
     let sync = true
     let timerLoading = null
@@ -70,8 +74,10 @@ export function resolveAsyncComponent (
 
     ;(owner: any).$on('hook:destroyed', () => remove(owners, owner))
 
+    //強制重新渲染
     const forceRender = (renderCompleted: boolean) => {
       for (let i = 0, l = owners.length; i < l; i++) {
+        //owners底下的每個component重新強制更新(vm_watcher.update())
         (owners[i]: any).$forceUpdate()
       }
 
@@ -111,6 +117,7 @@ export function resolveAsyncComponent (
       }
     })
 
+    //將工廠函數結果存於res
     const res = factory(resolve, reject)
 
     if (isObject(res)) {

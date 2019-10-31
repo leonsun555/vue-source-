@@ -138,13 +138,17 @@ export function createComponent (
 
   // async component
   let asyncFactory
+  //如果是工廠函數,不會有cid屬性
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor
+    //異步組件解析邏輯
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor)
+    //因為傳入為異步組件,在同步執行時(也就是第一次渲染時),該component是不會被建構的(Ctor = undefined))
     if (Ctor === undefined) {
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
       // the information will be used for async server-rendering and hydration.
+      //返回一個空的VNode,但內部存入工廠函數屬性及異步meta,以便日後調用到的時候供判別及執行後續邏輯
       return createAsyncPlaceholder(
         asyncFactory,
         data,

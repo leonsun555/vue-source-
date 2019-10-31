@@ -144,6 +144,7 @@ export function remove (arr: Array<any>, item: any): Array<any> | void {
  */
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export function hasOwn (obj: Object | Array<*>, key: string): boolean {
+  //hasOwnProperty並不會遍歷繼承屬性(__proto__))
   return hasOwnProperty.call(obj, key)
 }
 
@@ -332,6 +333,7 @@ export function looseIndexOf (arr: Array<mixed>, val: mixed): number {
 /**
  * Ensure a function is called only once.
  */
+//保證傳入函式只執行一次
 export function once (fn: Function): Function {
   let called = false
   return function () {

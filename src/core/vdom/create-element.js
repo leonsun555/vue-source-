@@ -120,9 +120,12 @@ export function _createElement (
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
+    //判斷是不是開發者自定義組件
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
+      // 建立Component vnode
       vnode = createComponent(Ctor, data, context, children, tag)
+    //以上皆非,則創建個不認識的vnode
     } else {
       // unknown or unlisted namespaced elements
       // check at runtime because it may get assigned a namespace when its

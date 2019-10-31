@@ -184,6 +184,7 @@ LIFECYCLE_HOOKS.forEach(hook => {
  * a three-way merge between constructor options, instance
  * options and parent options.
  */
+//合併組件策略
 function mergeAssets (
   parentVal: ?Object,
   childVal: ?Object,
@@ -462,12 +463,16 @@ export function resolveAsset (
   }
   const assets = options[type]
   // check local registration variations first
+  //如果在options.components有找到傳入id的屬性,則直接返回此方法
   if (hasOwn(assets, id)) return assets[id]
   const camelizedId = camelize(id)
+  //駝峰式命名再找一次
   if (hasOwn(assets, camelizedId)) return assets[camelizedId]
+  //Pascal命名再找一次
   const PascalCaseId = capitalize(camelizedId)
   if (hasOwn(assets, PascalCaseId)) return assets[PascalCaseId]
   // fallback to prototype chain
+  //從原型鍊上查詢
   const res = assets[id] || assets[camelizedId] || assets[PascalCaseId]
   if (process.env.NODE_ENV !== 'production' && warnMissing && !res) {
     warn(
