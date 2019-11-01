@@ -49,7 +49,7 @@ export function resolveAsyncComponent (
     return factory.errorComp
   }
   
-  //如果
+  //如果函數已解析完成,代表該異步Vue Component已經經過resolve產出Sub建構子了,直接返回Sub
   if (isDef(factory.resolved)) {
     return factory.resolved
   }
@@ -94,18 +94,24 @@ export function resolveAsyncComponent (
       }
     }
 
+    //定義resolve函數處理方式,並確保他只執行一次
     const resolve = once((res: Object | Class<Component>) => {
       // cache resolved
+      //將工廠函數傳入之Component透過webpack編譯後傳入,
+      //並確保有實作Vue.extend方法,並存入factory.resolved
+      //如果工廠函數傳入的只是函式,則直接原樣存入factory.resolved就好
       factory.resolved = ensureCtor(res, baseCtor)
       // invoke callbacks only if this is not a synchronous resolve
       // (async resolves are shimmed as synchronous during SSR)
       if (!sync) {
+        //異步處理時,強制重新渲染
         forceRender(true)
       } else {
         owners.length = 0
       }
     })
 
+    //定義reject函數處理方式,並確保他只執行一次
     const reject = once(reason => {
       process.env.NODE_ENV !== 'production' && warn(
         `Failed to resolve async component: ${String(factory)}` +
@@ -117,7 +123,7 @@ export function resolveAsyncComponent (
       }
     })
 
-    //將工廠函數結果存於res
+    //將定義過的resolve及reject處理方式傳給傳入之工廠函數進行apply
     const res = factory(resolve, reject)
 
     if (isObject(res)) {
