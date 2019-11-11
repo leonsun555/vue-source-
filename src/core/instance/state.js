@@ -70,6 +70,7 @@ function initProps (vm: Component, propsOptions: Object) {
   const keys = vm.$options._propKeys = []
   const isRoot = !vm.$parent
   // root instance props should be converted
+  //如果是頂部對象('el#App')則不該被觀測)
   if (!isRoot) {
     toggleObserving(false)
   }

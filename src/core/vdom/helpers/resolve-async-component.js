@@ -81,6 +81,9 @@ export function resolveAsyncComponent (
         (owners[i]: any).$forceUpdate()
       }
 
+      //還在loading過程中,不清除計時器,
+      //完成渲染後,把timerLoading & timerTimeout設為null,
+      //disable error & loading handler
       if (renderCompleted) {
         owners.length = 0
         if (timerLoading !== null) {
@@ -132,18 +135,25 @@ export function resolveAsyncComponent (
         if (isUndef(factory.resolved)) {
           res.then(resolve, reject)
         }
+      //高級異步組件邏輯
       } else if (isPromise(res.component)) {
+        //等待res解析,等待的過程中會先執行以下步驟,在loading的過程中,會先返回loading component,
+        //如果失敗或timeout,則返回reject警告
         res.component.then(resolve, reject)
 
+        //高級異步組件配置,如果error時有配置component,則確保它實作Vue.extend方法
         if (isDef(res.error)) {
           factory.errorComp = ensureCtor(res.error, baseCtor)
         }
 
+        //同上,高級異步組件配置,loading載入的Component
         if (isDef(res.loading)) {
           factory.loadingComp = ensureCtor(res.loading, baseCtor)
           if (res.delay === 0) {
+            //如果delay屬性為0,直接渲染成loading component
             factory.loading = true
           } else {
+            //計時超過delay時間則渲染成loading component
             timerLoading = setTimeout(() => {
               timerLoading = null
               if (isUndef(factory.resolved) && isUndef(factory.error)) {
@@ -154,6 +164,8 @@ export function resolveAsyncComponent (
           }
         }
 
+        //超過Timeout時間則返回reject函式,並顯示timeout訊息,及將factory.error設為true,
+        //渲染error component
         if (isDef(res.timeout)) {
           timerTimeout = setTimeout(() => {
             timerTimeout = null
@@ -171,6 +183,8 @@ export function resolveAsyncComponent (
 
     sync = false
     // return in case resolved synchronously
+    //如果factory.loading為true,代表載入的組件正在載入中,
+    //返回高級配置的loading component
     return factory.loading
       ? factory.loadingComp
       : factory.resolved

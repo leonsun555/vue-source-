@@ -222,6 +222,9 @@ export function mountComponent (
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
   //Watcher觀察者物件,是Vue響應示框架很重要的一個核心功能,位置在./observer/watcher.js
+  //updateComponent方法做為Watcher的getter傳入
+  //每個組件都有一個渲染Watcher,通過依賴收集訂閱每個依賴數據,
+  //當有更新時,及會即時重新渲染 
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {

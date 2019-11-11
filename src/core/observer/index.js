@@ -24,6 +24,7 @@ const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
  */
 export let shouldObserve: boolean = true
 
+//是否該被觀測的切換控制
 export function toggleObserving (value: boolean) {
   shouldObserve = value
 }
@@ -43,15 +44,19 @@ export class Observer {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
+    //使用Object.defineProperty定義__ob__屬性,值為此Observer class
     def(value, '__ob__', this)
+    //如果傳入觀察對象是陣列
     if (Array.isArray(value)) {
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
       }
+      //遞迴傳入之value包含的成員,每個成員都引用observe方法完成Observer對象建立
       this.observeArray(value)
     } else {
+      //如果不是陣列,就加入響應式屬性方法
       this.walk(value)
     }
   }
@@ -63,8 +68,10 @@ export class Observer {
    */
   walk (obj: Object) {
     const keys = Object.keys(obj)
+    //因為__ob__屬性在defineProperty時enumerable被設為false,所以for loop內的邏輯並不會影響到__ob__屬性
     for (let i = 0; i < keys.length; i++) {
-      defineReactive(obj, keys[i])
+      //使該Object的每個屬性都成為響應式(getter,setter)
+      defineReactive(obj, keys[i])  
     }
   }
 
@@ -108,17 +115,22 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
+  //如果觀測對象不是Object or 是VNode的話,直接返回,不予觀測
   if (!isObject(value) || value instanceof VNode) {
     return
   }
   let ob: Observer | void
+  //如果有__ob__屬性且為Observer class,代表先前有new過,直接返回該對象
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
   } else if (
+    //observe控制
     shouldObserve &&
     !isServerRendering() &&
+    //是陣列 or 基本對象, or 可擴展的對象
     (Array.isArray(value) || isPlainObject(value)) &&
     Object.isExtensible(value) &&
+    //不是Vue實例
     !value._isVue
   ) {
     ob = new Observer(value)
@@ -141,6 +153,7 @@ export function defineReactive (
 ) {
   const dep = new Dep()
 
+  //取得obj[key]的屬性描述符(get,set,enumerble,...)
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
@@ -149,17 +162,23 @@ export function defineReactive (
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
+  //沒有getter或有setter屬性,及傳入2個參數時
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
 
+  //遞迴將所有childOb轉成Observer對象
   let childOb = !shallow && observe(val)
+  //為該屬性定義get與set方法(響應式對象核心)
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
+      //如果該obj有getter方法,將obj當作this傳入getter方法,並暫存於value常量
       const value = getter ? getter.call(obj) : val
+      //如果目前Dep.target有Watcher對象
       if (Dep.target) {
+        //執行depend方法,進行依賴收集
         dep.depend()
         if (childOb) {
           childOb.dep.depend()

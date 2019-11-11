@@ -76,7 +76,9 @@ export default class Watcher {
       ? expOrFn.toString()
       : ''
     // parse expression for getter
+    // 如果傳入第2個參數為function(updateComponent)
     if (typeof expOrFn === 'function') {
+      //將其存入getter屬性
       this.getter = expOrFn
     } else {
       //將expOrFn轉成Function
@@ -102,10 +104,12 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    //將此Watcher物件push至Dep.target,做為當前欲處理的渲染watcher
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      //此處getter為updateComponent,相當於執行vm._update(vm._render(), hydrating)
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -119,6 +123,7 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
+      //處理完畢,將Watcher pop出來
       popTarget()
       this.cleanupDeps()
     }
@@ -130,6 +135,7 @@ export default class Watcher {
    */
   addDep (dep: Dep) {
     const id = dep.id
+    //檢查新的Depid有沒有和舊有的重複
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
       this.newDeps.push(dep)
@@ -142,11 +148,14 @@ export default class Watcher {
   /**
    * Clean up for dependency collection.
    */
+  //清除依賴
   cleanupDeps () {
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
+      //如果新dep.id並沒有在舊的DepIds中
       if (!this.newDepIds.has(dep.id)) {
+        //移除訂閱Wathcer
         dep.removeSub(this)
       }
     }
