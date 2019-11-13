@@ -39,6 +39,10 @@ let timerFunc
 // completely stops working after triggering a few times... so, if native
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
+
+//根據不同的環境支援狀況定義不同的timerFunc,即使用不同的task queue處理,
+//因為JS本身為單線程執行,任何非同步執行函式都必須等待單線程序執行完才會進行,
+//Promise.then()為優先級最高,當環境有支援時應選用此法
 if (typeof Promise !== 'undefined' && isNative(Promise)) {
   const p = Promise.resolve()
   timerFunc = () => {
@@ -86,22 +90,28 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
 
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
+  //將傳入的function push進隊列中依序執行
+  //先push進去先處理
   callbacks.push(() => {
     if (cb) {
       try {
+        //如果沒有傳入ctx,則帶入此.js的全局定義對象
         cb.call(ctx)
       } catch (e) {
         handleError(e, ctx, 'nextTick')
       }
+    //沒有cb函式,代表傳入的是一個Promise處理方式
     } else if (_resolve) {
       _resolve(ctx)
     }
   })
   if (!pending) {
     pending = true
+    //等到
     timerFunc()
   }
   // $flow-disable-line
+  //nextTick也支持Promise方法,返回相對應的promise對象
   if (!cb && typeof Promise !== 'undefined') {
     return new Promise(resolve => {
       _resolve = resolve

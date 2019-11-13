@@ -114,13 +114,14 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
+//data內容進入observe轉成響應式對象,prop則直接進入defineReactive,差了一些條件篩選
 export function observe (value: any, asRootData: ?boolean): Observer | void {
-  //如果觀測對象不是Object or 是VNode的話,直接返回,不予觀測
+  //如果對象不是Object or 是VNode的話,直接返回
   if (!isObject(value) || value instanceof VNode) {
     return
   }
   let ob: Observer | void
-  //如果有__ob__屬性且為Observer class,代表先前有new過,直接返回該對象
+  //如果有__ob__屬性且為Observer class,代表先前有new過,直接返回__ob__
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
   } else if (
@@ -173,6 +174,7 @@ export function defineReactive (
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
+    //每個響應式組件在render成vnode時,就會觸發getter做依賴收集,以利後續派發更新
     get: function reactiveGetter () {
       //如果該obj有getter方法,將obj當作this傳入getter方法,並暫存於value常量
       const value = getter ? getter.call(obj) : val
@@ -192,6 +194,7 @@ export function defineReactive (
     set: function reactiveSetter (newVal) {
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      //如果新值與舊值相同,則直接返回
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
@@ -206,7 +209,9 @@ export function defineReactive (
       } else {
         val = newVal
       }
+      //新值也透過observe回調轉成響應式對象
       childOb = !shallow && observe(newVal)
+      //啟動更新程序
       dep.notify()
     }
   })
@@ -217,22 +222,27 @@ export function defineReactive (
  * triggers change notification if the property doesn't
  * already exist.
  */
+
+ //手動新增對象屬性
 export function set (target: Array<any> | Object, key: any, val: any): any {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  //如果傳入目標為陣列的處理方式
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.length = Math.max(target.length, key)
     target.splice(key, 1, val)
     return val
   }
+  //如果key原本目標對象就擁有,並且不在其原型鍊上,則直接返回該值
   if (key in target && !(key in Object.prototype)) {
     target[key] = val
     return val
   }
   const ob = (target: any).__ob__
+  //目標不可為Vue實例和root $data
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid adding reactive properties to a Vue instance or its root $data ' +
@@ -244,7 +254,9 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     target[key] = val
     return val
   }
+  //手動定義該ob為響應式
   defineReactive(ob.value, key, val)
+  //派發更新
   ob.dep.notify()
   return val
 }

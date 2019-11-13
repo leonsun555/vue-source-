@@ -14,6 +14,7 @@ import {
 
 export const MAX_UPDATE_COUNT = 100
 
+//派發更新的暫存Watcher陣列
 const queue: Array<Watcher> = []
 const activatedChildren: Array<Component> = []
 let has: { [key: number]: ?true } = {}
@@ -81,6 +82,8 @@ function flushSchedulerQueue () {
   //    user watchers are created before the render watcher)
   // 3. If a component is destroyed during a parent component's watcher run,
   //    its watchers can be skipped.
+  //1.因為組件在render時是先父後子,故父組件的id會小於子組件,要確保flush的順序也是先父後子,必須要再做一次sorting
+  //2.確保user自定義的watcher排序在前面
   queue.sort((a, b) => a.id - b.id)
 
   // do not cache length because more watchers might be pushed
@@ -88,14 +91,18 @@ function flushSchedulerQueue () {
   for (index = 0; index < queue.length; index++) {
     watcher = queue[index]
     if (watcher.before) {
+      //執行beforeUpdate鉤子函數
       watcher.before()
     }
     id = watcher.id
     has[id] = null
+    //執行watcher數據更新
     watcher.run()
     // in dev build, check and stop circular updates.
+    //檢查是否有無限循環更新的loop,有的話則報錯
     if (process.env.NODE_ENV !== 'production' && has[id] != null) {
       circular[id] = (circular[id] || 0) + 1
+      //當循環次數>MAX_UPDATE_COUNT時,報錯
       if (circular[id] > MAX_UPDATE_COUNT) {
         warn(
           'You may have an infinite update loop ' + (
@@ -114,9 +121,11 @@ function flushSchedulerQueue () {
   const activatedQueue = activatedChildren.slice()
   const updatedQueue = queue.slice()
 
+  //reset旗標,告訴Vue可以進行下一個flush對象了
   resetSchedulerState()
 
   // call component updated and activated hooks
+  //執行生命週期鉤子函數
   callActivatedHooks(activatedQueue)
   callUpdatedHooks(updatedQueue)
 
@@ -166,6 +175,7 @@ export function queueWatcher (watcher: Watcher) {
   const id = watcher.id
   if (has[id] == null) {
     has[id] = true
+    //還沒進行flush,將其push進queue中排隊等待
     if (!flushing) {
       queue.push(watcher)
     } else {
@@ -175,9 +185,11 @@ export function queueWatcher (watcher: Watcher) {
       while (i > index && queue[i].id > watcher.id) {
         i--
       }
+      //從指定位置插入該watcher
       queue.splice(i + 1, 0, watcher)
     }
     // queue the flush
+    //確保一次只處理一個watcher的更新
     if (!waiting) {
       waiting = true
 
@@ -185,6 +197,8 @@ export function queueWatcher (watcher: Watcher) {
         flushSchedulerQueue()
         return
       }
+      //進行flush,並延至主線程序進行完統一執行flush
+      //因為要先把所有有觸發set(值變動)的watcher都塞進queue中
       nextTick(flushSchedulerQueue)
     }
   }

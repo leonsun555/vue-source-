@@ -180,6 +180,7 @@ export default class Watcher {
     } else if (this.sync) {
       this.run()
     } else {
+      //定義再scheduler.js
       queueWatcher(this)
     }
   }
@@ -190,6 +191,9 @@ export default class Watcher {
    */
   run () {
     if (this.active) {
+      //如果是外層渲染watcher,就直接執行updateComponent函式進行render和patch過程,
+      //完成後頁面上更新的數據就已經patch完成了,可以看到變化;
+      //如果是使用者自訂的watcher,會取得該觀察的data值,存入value
       const value = this.get()
       if (
         value !== this.value ||
@@ -200,10 +204,14 @@ export default class Watcher {
         this.deep
       ) {
         // set new value
+        //更新新的值
         const oldValue = this.value
         this.value = value
         if (this.user) {
           try {
+            //callback watcher function
+            //通常是使用者自定義watcher的函式邏輯,
+            //該watch屬性的(newVal,oldVal)對應下面的value,oldValue
             this.cb.call(this.vm, value, oldValue)
           } catch (e) {
             handleError(e, this.vm, `callback for watcher "${this.expression}"`)

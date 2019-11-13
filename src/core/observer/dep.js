@@ -12,7 +12,7 @@ let uid = 0
  */
 //Dep對象記錄了當前的渲染watcher(target)和其訂閱者watcher(subs)
 //因為同一時間只能有一個Watcher被計算,故Dep可以視為全局Watcher,
-//Dep實際上就是對每個組件的Wathcer進行管理,
+//Dep實際上就是對每個響應式組件的Wathcer進行管理,
 //而每個響應式對象的getter都持有一個dep可以存取dep的方法,該dep的subs中紀錄了有哪些watcher訂閱了自己
 export default class Dep {
   static target: ?Watcher;
@@ -41,6 +41,7 @@ export default class Dep {
 
   notify () {
     // stabilize the subscriber list first
+    //將訂閱者watchers存至subs準備進行update
     const subs = this.subs.slice()
     if (process.env.NODE_ENV !== 'production' && !config.async) {
       // subs aren't sorted in scheduler if not running async
@@ -49,6 +50,7 @@ export default class Dep {
       subs.sort((a, b) => a.id - b.id)
     }
     for (let i = 0, l = subs.length; i < l; i++) {
+      //依序通知訂閱者執行update()
       subs[i].update()
     }
   }

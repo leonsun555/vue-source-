@@ -99,6 +99,7 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
+      //定義該props中每個元素為響應式對象
       defineReactive(props, key, value)
     }
     // static props are already proxied on the component's prototype
@@ -153,6 +154,7 @@ function initData (vm: Component) {
     }
   }
   // observe data
+  //定義data中每個元素為響應式對象
   observe(data, true /* asRootData */)
 }
 
