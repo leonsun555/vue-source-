@@ -203,6 +203,7 @@ function initComputed (vm: Component, computed: Object) {
     // component-defined computed properties are already defined on the
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
+    //Computed定義的key不能和data和props衝突
     if (!(key in vm)) {
       defineComputed(vm, key, userDef)
     } else if (process.env.NODE_ENV !== 'production') {
@@ -247,13 +248,16 @@ export function defineComputed (
 }
 
 function createComputedGetter (key) {
+  //當有用到該計算屬性才會觸發(get)
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
       if (watcher.dirty) {
+        //調用此watcher的get方法,取得計算結果
         watcher.evaluate()
       }
       if (Dep.target) {
+        //提供依賴給所有有訂閱此computedWathers的watchers
         watcher.depend()
       }
       return watcher.value
@@ -297,6 +301,7 @@ function initMethods (vm: Component, methods: Object) {
 
 function initWatch (vm: Component, watch: Object) {
   for (const key in watch) {
+    //將watch屬性函式存至handler
     const handler = watch[key]
     if (Array.isArray(handler)) {
       for (let i = 0; i < handler.length; i++) {
@@ -360,15 +365,19 @@ export function stateMixin (Vue: Class<Component>) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
+    //表示該watcher為user自定義的
     options.user = true
+    //實際new Watcher,這裡可以由開發者傳入options來決定user watcher接下來的行為
     const watcher = new Watcher(vm, expOrFn, cb, options)
     if (options.immediate) {
       try {
+        //如果傳入immediate為true,則直接執行一次回調函數結果
         cb.call(vm, watcher.value)
       } catch (error) {
         handleError(error, vm, `callback for immediate watcher "${watcher.expression}"`)
       }
     }
+    //下一次再拜訪$watch方法時,進行teardown
     return function unwatchFn () {
       watcher.teardown()
     }

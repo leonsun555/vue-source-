@@ -48,9 +48,12 @@ export class Observer {
     def(value, '__ob__', this)
     //如果傳入觀察對象是陣列
     if (Array.isArray(value)) {
+      //如果環境支援__proto__原型鍊
       if (hasProto) {
+        //將傳入array的原型指向自訂的arrayMethods
         protoAugment(value, arrayMethods)
       } else {
+        //將自訂的arrayMethods方法直接copy至傳入array的屬性
         copyAugment(value, arrayMethods, arrayKeys)
       }
       //遞迴傳入之value包含的成員,每個成員都引用observe方法完成Observer對象建立

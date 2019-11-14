@@ -81,7 +81,8 @@ export default class Watcher {
       //將其存入getter屬性
       this.getter = expOrFn
     } else {
-      //將expOrFn轉成Function
+      //如果傳入的expOrFn不為function,那就是從user watcher取得的key string,
+      //直接解析傳入key string,將key string存成陣列並返回解析function存入this.getter
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         //this.getter為空函數
@@ -104,12 +105,13 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
-    //將此Watcher物件push至Dep.target,做為當前欲處理的渲染watcher
+    //將此Watcher物件push至Dep.target取代渲染watcher,做為當前欲處理watcher
     pushTarget(this)
     let value
     const vm = this.vm
     try {
       //此處getter為updateComponent,相當於執行vm._update(vm._render(), hydrating)
+      //如果是user watcher觀測的key發生變化,則調用this.getter,將變化結果存至value
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -120,10 +122,12 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // 當開發者傳入deep屬性為true時,會將該user watcher所觀測的data所有的巢狀object都觸發一次getter,
+      // 這樣內層的資料發生變化時,也能回調開發者自訂的函式
       if (this.deep) {
         traverse(value)
       }
-      //處理完畢,將Watcher pop出來
+      //處理完畢,將watcher pop出,取代回原來的渲染watcher
       popTarget()
       this.cleanupDeps()
     }
@@ -177,6 +181,7 @@ export default class Watcher {
     /* istanbul ignore else */
     if (this.lazy) {
       this.dirty = true
+    //如果sync為true,代表該watcher不必等到nextTick執行,直接跟著主線程執行run()渲染出變化
     } else if (this.sync) {
       this.run()
     } else {

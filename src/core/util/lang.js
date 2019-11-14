@@ -35,12 +35,15 @@ export function parsePath (path: string): any {
   if (bailRE.test(path)) {
     return
   }
+  //傳入位置以.號分開存成陣列
   const segments = path.split('.')
   return function (obj) {
     for (let i = 0; i < segments.length; i++) {
       if (!obj) return
+      //取得vm實例上該屬性資料(會調用到getter並觸發依賴收集,讓user watcher訂閱vm上data的變化)
       obj = obj[segments[i]]
     }
+    //返回getter後結果
     return obj
   }
 }

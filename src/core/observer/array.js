@@ -21,6 +21,8 @@ const methodsToPatch = [
 /**
  * Intercept mutating methods and emit events
  */
+//加入額外Array方法處理方式,
+//確保Array中的element可以被通知到更新!
 methodsToPatch.forEach(function (method) {
   // cache original method
   const original = arrayProto[method]

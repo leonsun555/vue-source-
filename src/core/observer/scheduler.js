@@ -189,7 +189,7 @@ export function queueWatcher (watcher: Watcher) {
       queue.splice(i + 1, 0, watcher)
     }
     // queue the flush
-    //確保一次只處理一個watcher的更新
+    //確保一次只執行一次
     if (!waiting) {
       waiting = true
 
