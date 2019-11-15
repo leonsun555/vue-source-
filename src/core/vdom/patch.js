@@ -443,6 +443,7 @@ export function createPatchFunction (backend) {
       checkDuplicateKeys(newCh)
     }
 
+    //更新相同新舊Vnode下的Children演算法
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
       if (isUndef(oldStartVnode)) {
         oldStartVnode = oldCh[++oldStartIdx] // Vnode has been moved left
@@ -537,8 +538,10 @@ export function createPatchFunction (backend) {
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
 
+    //新舊vnode的DOM都存入elm
     const elm = vnode.elm = oldVnode.elm
 
+    //非同步相關判斷
     if (isTrue(oldVnode.isAsyncPlaceholder)) {
       if (isDef(vnode.asyncFactory.resolved)) {
         hydrate(oldVnode.elm, vnode, insertedVnodeQueue)
@@ -552,6 +555,7 @@ export function createPatchFunction (backend) {
     // note we only do this if the vnode is cloned -
     // if the new node is not cloned it means the render functions have been
     // reset by the hot-reload-api and we need to do a proper re-render.
+    // 編譯相關邏輯
     if (isTrue(vnode.isStatic) &&
       isTrue(oldVnode.isStatic) &&
       vnode.key === oldVnode.key &&
@@ -563,6 +567,7 @@ export function createPatchFunction (backend) {
 
     let i
     const data = vnode.data
+    //如果新舊vnode為組件vnode
     if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
       i(oldVnode, vnode)
     }
@@ -573,21 +578,33 @@ export function createPatchFunction (backend) {
       for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
       if (isDef(i = data.hook) && isDef(i = i.update)) i(oldVnode, vnode)
     }
+    //非純文本vnode
     if (isUndef(vnode.text)) {
+      // 兩vnode都存在的情況
       if (isDef(oldCh) && isDef(ch)) {
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
-      } else if (isDef(ch)) {
+      }
+      //只有新的vnode有children 
+      else if (isDef(ch)) {
         if (process.env.NODE_ENV !== 'production') {
           checkDuplicateKeys(ch)
         }
+        //如果舊的vnode為純文本節點, 將其文本清空,並加入新vnode
         if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
         addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
-      } else if (isDef(oldCh)) {
+      }
+      //如果只有舊vnode 
+      else if (isDef(oldCh)) {
+        //刪除新vnode
         removeVnodes(oldCh, 0, oldCh.length - 1)
-      } else if (isDef(oldVnode.text)) {
+      }
+      //如果舊的vnode為純文本節點, 將其文本清空 
+      else if (isDef(oldVnode.text)) {
         nodeOps.setTextContent(elm, '')
       }
-    } else if (oldVnode.text !== vnode.text) {
+    } 
+    //如果新舊vnode都為純文本節點但內容不同,更新內容
+    else if (oldVnode.text !== vnode.text) {
       nodeOps.setTextContent(elm, vnode.text)
     }
     if (isDef(data)) {
@@ -733,21 +750,20 @@ export function createPatchFunction (backend) {
     let isInitialPatch = false
     const insertedVnodeQueue = []
 
-    //判斷oldVnode是否存在,存在代表父節點為真實DOM,表示剛開始轉換過程,
+    //判斷oldVnode是否存在,如果存在表示當前為組件更新過程,或是初次new Vue的時候
     //不存在代表父節點是VNode
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
       isInitialPatch = true
-      //建立當前組件的vnode
+      //將傳入vnode傳成DOM Element並插入適當DOM Tree位置
       createElm(vnode, insertedVnodeQueue)
     } else {
-      //檢查原始傳入DOM Element是否為真實Element
       const isRealElement = isDef(oldVnode.nodeType)
+      //如果新vnode與舊vnode相等
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
-        //判斷為真實DOM
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
@@ -772,7 +788,6 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
-          //將真實DOM轉成VNode,將真實DOM存進odlVnode.elm屬性中
           oldVnode = emptyNodeAt(oldVnode)
         }
 
@@ -783,7 +798,7 @@ export function createPatchFunction (backend) {
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
-        // 將頂端vnode掛載至真實DOM
+        //將傳入vnode傳成DOM Element並插入適當DOM Tree位置
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -795,18 +810,21 @@ export function createPatchFunction (backend) {
         )
 
         // update parent placeholder node element, recursively
+        // 更新父占位符節點
         if (isDef(vnode.parent)) {
           let ancestor = vnode.parent
+          // 找到可以掛載(patch)的vnode並存入patchable
           const patchable = isPatchable(vnode)
           while (ancestor) {
             for (let i = 0; i < cbs.destroy.length; ++i) {
               cbs.destroy[i](ancestor)
             }
+            //父占位符節點重新指向新的DOM節點
             ancestor.elm = vnode.elm
             if (patchable) {
               for (let i = 0; i < cbs.create.length; ++i) {
                 cbs.create[i](emptyNode, ancestor)
-              }
+              }ㄒ
               // #6513
               // invoke insert hooks that may have been merged by create hooks.
               // e.g. for directives that uses the "inserted" hook.
@@ -820,12 +838,14 @@ export function createPatchFunction (backend) {
             } else {
               registerRef(ancestor)
             }
+            //如果有更上層的占位符,則循環執行更新過程,直到undefined
             ancestor = ancestor.parent
           }
         }
 
         //因為patch過程會將render產生的vnode轉成真實DOM,
-        //舊的DOM並不會自動移除,在這裡需要增加移除邏輯
+        //舊的DOM並不會自動移除,在這裡需要增加移除邏輯,
+        //在removeVnodes時也會調用destory程序,執行鉤子函數
         // destroy old node
         if (isDef(parentElm)) {
           removeVnodes([oldVnode], 0, 0)

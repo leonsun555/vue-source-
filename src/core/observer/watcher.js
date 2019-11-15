@@ -111,7 +111,7 @@ export default class Watcher {
     const vm = this.vm
     try {
       //此處getter為updateComponent,相當於執行vm._update(vm._render(), hydrating)
-      //如果是user watcher觀測的key發生變化,則調用this.getter,將變化結果存至value
+      //如果是user watcher或computed watcher觀測的內容發生變化,則調用this.getter,將變化結果存至value
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
