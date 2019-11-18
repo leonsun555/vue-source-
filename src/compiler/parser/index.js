@@ -200,7 +200,7 @@ export function parse (
       )
     }
   }
-
+  //Html解析邏輯
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,

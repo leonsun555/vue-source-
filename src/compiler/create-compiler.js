@@ -5,6 +5,9 @@ import { detectErrors } from './error-detector'
 import { createCompileToFunctionFn } from './to-function'
 
 export function createCompilerCreator (baseCompile: Function): Function {
+  //baseOptions為全局環境配置,定義在創建compiler時一起傳入,
+  //根據不同的運行環境(web/weex)傳入不同的配置,
+  //baseOptions定義在platform/web(weex)/compiler/options.js中
   return function createCompiler (baseOptions: CompilerOptions) {
     function compile (
       template: string,
@@ -58,6 +61,7 @@ export function createCompilerCreator (baseCompile: Function): Function {
 
       finalOptions.warn = warn
 
+      //template去空白傳入baseCompile,為編譯過程的核心
       const compiled = baseCompile(template.trim(), finalOptions)
       if (process.env.NODE_ENV !== 'production') {
         detectErrors(compiled.ast, warn)
