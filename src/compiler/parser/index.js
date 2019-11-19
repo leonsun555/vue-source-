@@ -62,6 +62,7 @@ export function createASTElement (
   attrs: Array<ASTAttr>,
   parent: ASTElement | void
 ): ASTElement {
+  //AST Element type 1
   return {
     type: 1,
     tag,
@@ -249,6 +250,7 @@ export function parse (
         })
       }
 
+      //如果找到禁止標籤,報警告
       if (isForbiddenTag(element) && !isServerRendering()) {
         element.forbidden = true
         process.env.NODE_ENV !== 'production' && warn(
@@ -277,11 +279,15 @@ export function parse (
         processRawAttrs(element)
       } else if (!element.processed) {
         // structural directives
+        //v-for擴展至ast element
         processFor(element)
+        //v-if擴展至ast element
         processIf(element)
         processOnce(element)
       }
 
+      //root為ast tree根節點
+      //根節點檢查 
       if (!root) {
         root = element
         if (process.env.NODE_ENV !== 'production') {
@@ -289,10 +295,13 @@ export function parse (
         }
       }
 
+      //判斷目前element是不是一元標籤
       if (!unary) {
         currentParent = element
+        //把當前element push至stack等待遇到匹配的end tag
         stack.push(element)
       } else {
+        //是一元標籤直接閉合
         closeElement(element)
       }
     },
@@ -357,6 +366,7 @@ export function parse (
         }
         let res
         let child: ?ASTNode
+        //AST Expression type 2
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
           child = {
             type: 2,
@@ -364,6 +374,7 @@ export function parse (
             tokens: res.tokens,
             text
           }
+        //純文字,type 3 (AST Text or Comment)
         } else if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
           child = {
             type: 3,

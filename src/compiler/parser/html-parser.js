@@ -63,8 +63,10 @@ export function parseHTML (html, options) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
     if (!lastTag || !isPlainTextElement(lastTag)) {
-      //解析結束旗標
+      //判斷目前html,如果起始為<,則代表非純文本內容,是標籤
+      //相反如是
       let textEnd = html.indexOf('<')
+      //標籤處理
       if (textEnd === 0) {
         // Comment:
         if (comment.test(html)) {
@@ -80,6 +82,7 @@ export function parseHTML (html, options) {
           }
         }
 
+        //跳過環境判別<!--[if lt IE 9]>
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
         if (conditionalComment.test(html)) {
           const conditionalEnd = html.indexOf(']>')
@@ -90,6 +93,7 @@ export function parseHTML (html, options) {
           }
         }
 
+        //跳過Doctype標籤
         // Doctype:
         const doctypeMatch = html.match(doctype)
         if (doctypeMatch) {
@@ -118,6 +122,7 @@ export function parseHTML (html, options) {
       }
 
       let text, rest, next
+      //純文本處理
       if (textEnd >= 0) {
         rest = html.slice(textEnd)
         while (
@@ -144,6 +149,7 @@ export function parseHTML (html, options) {
       }
 
       if (options.chars && text) {
+        //純文本調用chars回調函數
         options.chars(text, index - text.length, index)
       }
     } else {
@@ -197,6 +203,7 @@ export function parseHTML (html, options) {
       }
       advance(start[0].length)
       let end, attr
+      //將標籤屬性加入match.attrs陣列中
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
         advance(attr[0].length)
@@ -204,6 +211,8 @@ export function parseHTML (html, options) {
         match.attrs.push(attr)
       }
       if (end) {
+        //將一元斜線符存至unarySlash
+        //ex: <img/>
         match.unarySlash = end[1]
         advance(end[0].length)
         match.end = index
@@ -225,9 +234,11 @@ export function parseHTML (html, options) {
       }
     }
 
+    //isUnaryTag定義在platforms/web/compiler/util.js
     const unary = isUnaryTag(tagName) || !!unarySlash
 
     const l = match.attrs.length
+    //定義attrs陣列並將對應的屬性key和value存入
     const attrs = new Array(l)
     for (let i = 0; i < l; i++) {
       const args = match.attrs[i]
@@ -245,12 +256,14 @@ export function parseHTML (html, options) {
       }
     }
 
+    //非一元斜線標籤將相關屬性push進stack中
     if (!unary) {
       stack.push({ tag: tagName, lowerCasedTag: tagName.toLowerCase(), attrs: attrs, start: match.start, end: match.end })
       lastTag = tagName
     }
 
     if (options.start) {
+      //調用start函數,傳入解析後的參數,創建ast tree
       options.start(tagName, attrs, unary, match.start, match.end)
     }
   }
@@ -263,6 +276,7 @@ export function parseHTML (html, options) {
     // Find the closest opened tag of the same type
     if (tagName) {
       lowerCasedTagName = tagName.toLowerCase()
+      //持續pos--,直到找到stack中匹配的結束標籤
       for (pos = stack.length - 1; pos >= 0; pos--) {
         if (stack[pos].lowerCasedTag === lowerCasedTagName) {
           break
@@ -280,12 +294,15 @@ export function parseHTML (html, options) {
           (i > pos || !tagName) &&
           options.warn
         ) {
+          //報錯,沒有匹配的結束標籤
+          //ex: <div><span></div>
           options.warn(
             `tag <${stack[i].tag}> has no matching end tag.`,
             { start: stack[i].start, end: stack[i].end }
           )
         }
         if (options.end) {
+          //end回調函數
           options.end(stack[i].tag, start, end)
         }
       }

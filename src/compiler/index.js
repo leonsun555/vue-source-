@@ -12,7 +12,7 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   template: string,
   options: CompilerOptions
 ): CompiledResult {
-  //編譯核心三步驟-解析
+  //編譯核心三步驟-解析,生成ast tree
   const ast = parse(template.trim(), options)
   if (options.optimize !== false) {
     //優化
